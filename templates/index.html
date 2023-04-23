@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Chat with GPT models</title>
+        <title>Chat with GPT models</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+    <script type="text/javascript" src="{{ url_for('static', filename='app.js') }}"></script>
+	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+</head>
+<body>
+	<header>
+		<h1>Chat with GPT models</h1>
+	</header>
+	<main>
+		<form id="chat-form" method="POST">
+			<label for="model-select">Select a model:</label>
+			<select id="model-select" name="model">
+				{% for model in models %}
+				<option value="{{ model }}">{{ model }}</option>
+				{% endfor %}
+			</select>
+			<textarea id="user-input" name="user_input" placeholder="Enter Markdown here..."></textarea>
+			<button type="submit">Send</button>
+		</form>
+		<div id="response-container">
+			{% if response %}
+			<div class="response">
+				<p>Response:</p>
+				<div class="message">{{ response }}</div>
+			</div>
+			{% endif %}
+		</div>
+	</main>
+	<script src="app.js"></script>
+</body>
+</html>
+
+

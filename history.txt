@@ -1,0 +1,8 @@
+user: Hello
+assistant: Hi there!
+user: How are you?
+assistant: I'm doing well, thanks for asking. How about you?
+user: I'm good too.
+assistant: That's great to hear.
+
+
