@@ -1,2 +1,8 @@
 openai
 flask
+requests
+Flask-GraphQL 
+graphene
+pytest
+pytest-flask
+spacy
