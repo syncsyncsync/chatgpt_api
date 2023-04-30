@@ -5,7 +5,6 @@ import argparse
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # add coment
-
 def chat_with_models(model, messages):
     '''
     Chat with OpenAI models
@@ -13,8 +12,11 @@ def chat_with_models(model, messages):
         model (str): Model name
         messages (list): List of messages
     Returns:
-        str: Response from the model
+        dict: Response from the model
     '''
+    
+    print(f"[EXPOSED] Messages sent to OpenAI: {messages}")
+
     try:
         chat_models = [
             "gpt-4", "gpt-4-0314", "gpt-4-32k", "gpt-4-32k-0314",
@@ -22,11 +24,15 @@ def chat_with_models(model, messages):
         ]
 
         if model in chat_models:
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=messages
-            )
-            return response.choices[0].message.content
+            try:
+                response = openai.ChatCompletion.create(
+                    model=model,
+                    messages=messages
+                )
+                return {"role": "assistant", "content": response.choices[0].message.content}
+            except Exception as e:
+                print(f"Error: {e}")
+                return {"role": "assistant", "content": "Error: Unable to get response from the model."}
         else:
             prompt = " ".join([msg["content"] for msg in messages if msg["role"] == "user"])
             response = openai.Completion.create(
@@ -37,7 +43,52 @@ def chat_with_models(model, messages):
                 stop=None,
                 temperature=0.5
             )
-            return response.choices[0].text.strip()
+            return {"role": "assistant", "content": response.choices[0].text.strip()}
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return {"role": "assistant", "content": "Error: Unable to get response from the model."}
+
+# def chat_with_models(model, messages):
+#     '''
+#     Chat with OpenAI models
+#     Args:
+#         model (str): Model name
+#         messages (list): List of messages
+#     Returns:
+#         str: Response from the model
+#     '''
+    
+#     print(f"Messages sent to OpenAI: {messages}")
+
+#     try:
+#         chat_models = [
+#             "gpt-4", "gpt-4-0314", "gpt-4-32k", "gpt-4-32k-0314",
+#             "gpt-3.5-turbo", "gpt-3.5-turbo-0301"
+#         ]
+
+#         if model in chat_models:
+#             response = openai.ChatCompletion.create(
+#                 model=model,
+#                 messages=messages
+#             )
+#             # return response.choices[0].message.content
+#             return {"role": "assistant", "content": response.choices[0].message.content}
+#         else:
+#             prompt = " ".join([msg["content"] for msg in messages if msg["role"] == "user"])
+#             response = openai.Completion.create(
+#                 engine=model,
+#                 prompt=prompt,
+#                 max_tokens=150,
+#                 n=1,
+#                 stop=None,
+#                 temperature=0.5
+#             )
+#             #return response.choices[0].text.strip()
+#             return {"role": "assistant", "content": response.choices[0].text.strip()}
+
+            
+
 
     except openai.OpenAIError as e:
         print(f"Error occurred while connecting to OpenAI API: {e}")
