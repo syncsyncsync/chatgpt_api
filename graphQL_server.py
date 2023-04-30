@@ -3,7 +3,7 @@ import random
 from flask import Flask
 from flask_graphql import GraphQLView
 import graphene
-import sqlite3
+#import sqlite3
 import re
 import spacy
 from chatgpt import chat_with_models
