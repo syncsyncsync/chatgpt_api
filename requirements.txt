@@ -6,3 +6,5 @@ graphene
 pytest
 pytest-flask
 spacy
+tiktoken
+flask_wtf

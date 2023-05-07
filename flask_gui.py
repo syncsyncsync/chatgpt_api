@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template
 from chatgpt import chat_with_models
+from graphQL_client import send_messages
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
@@ -37,5 +38,5 @@ def chat():
     return render_template('index.html', models=chat_models)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=6000)
+    app.run(debug=True, port=8080)
 

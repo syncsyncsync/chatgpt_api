@@ -26,7 +26,6 @@ class UserMessage(graphene.ObjectType):
     content = graphene.String()
 
 
-
 def filter_keyword_information(text, keyword_file='keywords.txt'):
     with open(keyword_file, 'r', encoding='utf-8') as file:
         keywords = [line.strip() for line in file.readlines()]
@@ -36,9 +35,11 @@ def filter_keyword_information(text, keyword_file='keywords.txt'):
 
     return text
 
+
 def filter_confidential_by_ai(text, model):
     # to be deployed 
     return text
+
 
 def find_names_and_places(text):
     doc = nlp(text)
@@ -61,7 +62,6 @@ def filter_japanese_names(text):
 
     return masked_text
 
-import re
 
 def filter_japanese_by_name_keisyou(text):
     name_pattern = r"([一-龯]+(さん|ちゃん|君|くん|様|さま))"
@@ -90,7 +90,6 @@ def filter_japanese_by_mecab(text):
         node = node.next
 
     return masked_text
-
 
 
 def filter_anonymize_text(text):
@@ -158,10 +157,17 @@ def contains_confidential_information(message):
             return True, keyword
     return False, None
 
+
 class Query(graphene.ObjectType):
     system_messages = graphene.List(SystemMessage)
     assistant_messages = graphene.List(AssistantMessage)
     user_messages = graphene.List(UserMessage)
+
+    model_info = graphene.Field(lambda: ModelInfo, model_name=graphene.String(default_value="gpt-3.5-turbo-0301"))
+
+    def resolve_model_info(self, info, model_name="gpt-3.5-turbo-0301"):
+        #token_count = count_tokens(model_name)
+        return ModelInfo(model_name=model_name, token_count=None)
 
     def resolve_system_messages(self, info):
         filtered_messages = []
@@ -183,6 +189,7 @@ class Query(graphene.ObjectType):
                 print(f"Filtered out message: {msg.content} | Detected keyword: {keyword}")
         return filtered_messages
 
+
     def resolve_user_messages(self, info):
         filtered_messages = []
         for msg in user_messages:
@@ -194,20 +201,72 @@ class Query(graphene.ObjectType):
         return filtered_messages
 
 
+# class Query(graphene.ObjectType):
+#     system_messages = graphene.List(SystemMessage)
+#     assistant_messages = graphene.List(AssistantMessage)
+#     user_messages = graphene.List(UserMessage)
+
+#     model_info = graphene.Field(lambda: ModelInfo, model_name=graphene.String(default_value="gpt-3.5-turbo-0301"))
+
+#     def resolve_model_info(self, info, model_name="gpt-3.5-turbo-0301"):
+#         # token_count = count_tokens(model_name)
+#         return ModelInfo(model_name=model_name, token_count=None)
+
+#     def resolve_system_messages(self, info):
+#         system_messages_list = info.context.system_messages  # Access data from context
+#         filtered_messages = []
+#         for msg in system_messages_list:
+#             contains_confidential, keyword = contains_confidential_information(msg.content)
+#             if not contains_confidential:
+#                 filtered_messages.append(msg)
+#             else:
+#                 print(f"Filtered out message: {msg.content} | Detected keyword: {keyword}")
+#         return filtered_messages
+
+#     def resolve_assistant_messages(self, info):
+#         assistant_messages_list = info.context.assistant_messages  # Access data from context
+#         filtered_messages = []
+#         for msg in assistant_messages_list:
+#             contains_confidential, keyword = contains_confidential_information(msg.content)
+#             if not contains_confidential:
+#                 filtered_messages.append(msg)
+#             else:
+#                 print(f"Filtered out message: {msg.content} | Detected keyword: {keyword}")
+#         return filtered_messages
+
+#     def resolve_user_messages(self, info):
+#         user_messages_list = info.context.user_messages  # Access data from context
+#         filtered_messages = []
+#         for msg in user_messages_list:
+#             contains_confidential, keyword = contains_confidential_information(msg.content)
+#             if not contains_confidential:
+#                 filtered_messages.append(msg)
+#             else:
+#                 print(f"Filtered out message: {msg.content} | Detected keyword: {keyword}")
+#         return filtered_messages
+
+
+class ModelInfo(graphene.ObjectType):
+    model_name = graphene.String()
+    token_count = None
+
+
 class SendMessages(graphene.Mutation):
     class Arguments:
         system_message = graphene.String()
         assistant_message = graphene.String()
         user_message = graphene.String()
+        model_name = graphene.String(default_value="gpt-3.5-turbo-0301")
 
     system_message = graphene.Field(lambda: SystemMessage)
     assistant_message = graphene.Field(lambda: AssistantMessage)
     user_message = graphene.Field(lambda: UserMessage)
+    modelName = graphene.String()
 
-    def mutate(self, info, filters=[], system_message=None, assistant_message=None, user_message=None):
-        model_name = "gpt-3.5-turbo-0301"  # Add this line to define the model_name
-
+    def mutate(self, info, system_message=None, assistant_message=None, user_message=None, model_name=None):
+            
         input_messages = []
+        filters = ['numerical', 'keyword', 'anonymize', 'japanese']
 
         if system_message:
             system_message = apply_filters(system_message, filters)
@@ -233,12 +292,12 @@ class SendMessages(graphene.Mutation):
 
         return SendMessages(system_message=SystemMessage(content=system_message) if system_message else None,
                             assistant_message=AssistantMessage(content=assistant_message) if assistant_message else None,
-                            user_message=UserMessage(content=user_message) if user_message else None)
+                            user_message=UserMessage(content=user_message) if user_message else None,
+                            modelName=model_name)
 
 
 class Mutation(graphene.ObjectType):
     send_messages = SendMessages.Field()
-
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
 

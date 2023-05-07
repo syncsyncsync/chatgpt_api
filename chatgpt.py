@@ -4,17 +4,17 @@ import argparse
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# add coment
-def chat_with_models(model, messages):
+def chat_with_models(model, messages, system_message=None):
     '''
     Chat with OpenAI models
     Args:
         model (str): Model name
         messages (list): List of messages
+        system_message (str, optional): System message to start the conversation. Defaults to None.
     Returns:
-        dict: Response from the model
+        list: List of response messages from the model
     '''
-    
+
     print(f"[EXPOSED] Messages sent to OpenAI: {messages}")
 
     try:
@@ -23,16 +23,20 @@ def chat_with_models(model, messages):
             "gpt-3.5-turbo", "gpt-3.5-turbo-0301"
         ]
 
+        response_messages = []
+        if system_message:
+            response_messages.append({"role": "system", "content": system_message})
+
         if model in chat_models:
             try:
                 response = openai.ChatCompletion.create(
                     model=model,
                     messages=messages
                 )
-                return {"role": "assistant", "content": response.choices[0].message.content}
+                response_messages.append({"role": "assistant", "content": response.choices[0].message.content})
             except Exception as e:
                 print(f"Error: {e}")
-                return {"role": "assistant", "content": "Error: Unable to get response from the model."}
+                response_messages.append({"role": "assistant", "content": "Error: Unable to get response from the model."})
         else:
             prompt = " ".join([msg["content"] for msg in messages if msg["role"] == "user"])
             response = openai.Completion.create(
@@ -43,12 +47,13 @@ def chat_with_models(model, messages):
                 stop=None,
                 temperature=0.5
             )
-            return {"role": "assistant", "content": response.choices[0].text.strip()}
+            response_messages.append({"role": "assistant", "content": response.choices[0].text.strip()})
+
+        return response_messages
 
     except Exception as e:
         print(f"Error: {e}")
-        return {"role": "assistant", "content": "Error: Unable to get response from the model."}
-
+        return [{"role": "assistant", "content": "Error: Unable to get response from the model."}]
 
     except openai.OpenAIError as e:
         print(f"Error occurred while connecting to OpenAI API: {e}")
