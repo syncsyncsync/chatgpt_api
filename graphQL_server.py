@@ -9,6 +9,10 @@ import spacy
 from chatgpt import chat_with_models
 # import MeCab
 
+# Initializing session history
+session_history = {}
+
+
 
 def load_spacy_model():
     global nlp
@@ -115,6 +119,7 @@ def apply_japanese_filters(text, filters=[
         text = filter_func(text)
     return text
 
+
 def apply_filters(text, filters= [ 'numerical', 'keyword',  'anonymize'],jp_filters=[] ,model=None, keyword_file=None):
 
     if filters== [] :
@@ -164,10 +169,16 @@ class Query(graphene.ObjectType):
     user_messages = graphene.List(UserMessage)
 
     model_info = graphene.Field(lambda: ModelInfo, model_name=graphene.String(default_value="gpt-3.5-turbo-0301"))
+ 
+    session_history = graphene.List(graphene.String, sessionId=graphene.String())
+
+    def resolve_session_history(self, info, sessionId):
+        return session_history.get(sessionId, [])
 
     def resolve_model_info(self, info, model_name="gpt-3.5-turbo-0301"):
         #token_count = count_tokens(model_name)
         return ModelInfo(model_name=model_name, token_count=None)
+
 
     def resolve_system_messages(self, info):
         filtered_messages = []
@@ -178,6 +189,7 @@ class Query(graphene.ObjectType):
             else:
                 print(f"Filtered out message: {msg.content} | Detected keyword: {keyword}")
         return filtered_messages
+
 
     def resolve_assistant_messages(self, info):
         filtered_messages = []
@@ -201,58 +213,16 @@ class Query(graphene.ObjectType):
         return filtered_messages
 
 
-# class Query(graphene.ObjectType):
-#     system_messages = graphene.List(SystemMessage)
-#     assistant_messages = graphene.List(AssistantMessage)
-#     user_messages = graphene.List(UserMessage)
-
-#     model_info = graphene.Field(lambda: ModelInfo, model_name=graphene.String(default_value="gpt-3.5-turbo-0301"))
-
-#     def resolve_model_info(self, info, model_name="gpt-3.5-turbo-0301"):
-#         # token_count = count_tokens(model_name)
-#         return ModelInfo(model_name=model_name, token_count=None)
-
-#     def resolve_system_messages(self, info):
-#         system_messages_list = info.context.system_messages  # Access data from context
-#         filtered_messages = []
-#         for msg in system_messages_list:
-#             contains_confidential, keyword = contains_confidential_information(msg.content)
-#             if not contains_confidential:
-#                 filtered_messages.append(msg)
-#             else:
-#                 print(f"Filtered out message: {msg.content} | Detected keyword: {keyword}")
-#         return filtered_messages
-
-#     def resolve_assistant_messages(self, info):
-#         assistant_messages_list = info.context.assistant_messages  # Access data from context
-#         filtered_messages = []
-#         for msg in assistant_messages_list:
-#             contains_confidential, keyword = contains_confidential_information(msg.content)
-#             if not contains_confidential:
-#                 filtered_messages.append(msg)
-#             else:
-#                 print(f"Filtered out message: {msg.content} | Detected keyword: {keyword}")
-#         return filtered_messages
-
-#     def resolve_user_messages(self, info):
-#         user_messages_list = info.context.user_messages  # Access data from context
-#         filtered_messages = []
-#         for msg in user_messages_list:
-#             contains_confidential, keyword = contains_confidential_information(msg.content)
-#             if not contains_confidential:
-#                 filtered_messages.append(msg)
-#             else:
-#                 print(f"Filtered out message: {msg.content} | Detected keyword: {keyword}")
-#         return filtered_messages
-
-
 class ModelInfo(graphene.ObjectType):
     model_name = graphene.String()
     token_count = None
 
 
+
+
 class SendMessages(graphene.Mutation):
     class Arguments:
+        sessionId = graphene.String(required=True)
         system_message = graphene.String()
         assistant_message = graphene.String()
         user_message = graphene.String()
@@ -263,10 +233,16 @@ class SendMessages(graphene.Mutation):
     user_message = graphene.Field(lambda: UserMessage)
     modelName = graphene.String()
 
-    def mutate(self, info, system_message=None, assistant_message=None, user_message=None, model_name=None):
-            
+    #def mutate(self, info, system_message=None, assistant_message=None, user_message=None, model_name=None):
+    def mutate(self, info, sessionId, system_message=None, assistant_message=None, user_message=None, model_name=None):
+        # Checking if session history exists for the session
+        if sessionId not in session_history:
+            session_history[sessionId] = []
+                    
         input_messages = []
         filters = ['numerical', 'keyword', 'anonymize', 'japanese']
+
+        print(f"Received arguments: sessionId={sessionId}, system_message={system_message}, assistant_message={assistant_message}, user_message={user_message}, model_name={model_name}")
 
         if system_message:
             system_message = apply_filters(system_message, filters)
@@ -277,7 +253,10 @@ class SendMessages(graphene.Mutation):
         if user_message:
             user_message = apply_filters(user_message, filters)
             input_messages.append({"role": "user", "content": user_message})
-
+    
+        # Saving the query to session history before processing
+        session_history[sessionId].append(input_messages)
+        
         response = chat_with_models(model_name, input_messages)
 
         if isinstance(response, list):
