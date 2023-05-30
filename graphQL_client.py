@@ -22,7 +22,7 @@ def send_graphql_request(query, variables=None):
         raise Exception(f"GraphQL request failed with status code {response.status_code}")
 
 
-def send_messages(sessionId, system_message=None, assistant_message=None, user_message=None, model_name="gpt-3.5-turbo-0301"):
+def send_messages(sessionId, system_message=None, assistant_message=None, user_message=None, model_name="gpt-3.5-turbo"):
     # Add sessionId to the sendMessages mutation
     send_messages_mutation = """
     mutation SendMessages($sessionId: String!, $systemMessage: String, $assistantMessage: String, $userMessage: String,$modelName: String) {
@@ -56,38 +56,6 @@ def send_messages(sessionId, system_message=None, assistant_message=None, user_m
     else:
         return response['data']['sendMessages']
 
-# def send_messages(system_message=None, assistant_message=None, user_message=None, model_name="gpt-3.5-turbo-0301"):
-#     send_messages_mutation = """
-#     mutation SendMessages($systemMessage: String, $assistantMessage: String, $userMessage: String,$modelName: String) {
-#         sendMessages(systemMessage: $systemMessage, assistantMessage: $assistantMessage, userMessage: $userMessage, modelName: $modelName) {
-#             systemMessage {
-#                 content
-#             }
-#             assistantMessage {
-#                 content
-#             }
-#             userMessage {
-#                 content
-#             }
-#             modelName
-#         }
-#     }
-#     """
-
-#     variables = {
-#         "systemMessage": system_message,
-#         "assistantMessage": assistant_message,
-#         "userMessage": user_message,
-#         "modelName":  model_name
-#     }
-
-#     response = send_graphql_request(send_messages_mutation, variables)
-#     if 'errors' in response:
-#         print("Error sending messages:")
-#         print(response['errors'])
-#     else:
-#         return response['data']['sendMessages']
-
 def get_session_history(sessionId):
     # Add get_session_history query
     get_session_history_query = """
@@ -115,14 +83,14 @@ def parse_arguments():
     parser.add_argument("--system", type=str, default="be my English teacher", help="System message to send")
     parser.add_argument("--assistant", type=str, default=None, help="Assistant message to send")
     parser.add_argument("--user", default="Hello" ,type=str, help="User message to send")
-    parser.add_argument("--model", default="gpt-3.5-turbo-0301", type=str, help="model")
+    parser.add_argument("--model", default="gpt-3.5-turbo", type=str, help="model")
     return parser.parse_args()
 
 
 def main():
+    history = {}
     args = parse_arguments()
-
-    #send_messages_response = send_messages(system_message=args.system, assistant_message=args.assistant, user_message=args.user, model_name=args.model) 
+    
     send_messages_response = send_messages(sessionId=args.sessionId, system_message=args.system, assistant_message=args.assistant, user_message=args.user, model_name=args.model)
    
     if send_messages_response:

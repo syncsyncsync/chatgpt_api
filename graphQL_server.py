@@ -8,10 +8,9 @@ import re
 import spacy
 from chatgpt import chat_with_models
 # import MeCab
-
+import datetime
 # Initializing session history
 session_history = {}
-
 
 
 def load_spacy_model():
@@ -168,14 +167,15 @@ class Query(graphene.ObjectType):
     assistant_messages = graphene.List(AssistantMessage)
     user_messages = graphene.List(UserMessage)
 
-    model_info = graphene.Field(lambda: ModelInfo, model_name=graphene.String(default_value="gpt-3.5-turbo-0301"))
+    model_info = graphene.Field(lambda: ModelInfo, model_name=graphene.String(default_value="gpt-3.5-turbo"))
  
     session_history = graphene.List(graphene.String, sessionId=graphene.String())
 
     def resolve_session_history(self, info, sessionId):
+        print(f"sessionId: {sessionId}")
         return session_history.get(sessionId, [])
 
-    def resolve_model_info(self, info, model_name="gpt-3.5-turbo-0301"):
+    def resolve_model_info(self, info, model_name="gpt-3.5-turbo"):
         #token_count = count_tokens(model_name)
         return ModelInfo(model_name=model_name, token_count=None)
 
@@ -213,11 +213,22 @@ class Query(graphene.ObjectType):
         return filtered_messages
 
 
+def extract_messages_from_session_history(sessionId):
+    session_data = session_history.get(sessionId, [])
+    messages = []
+
+    for entry in session_data:
+        role = entry.get("role")
+        message = entry.get("message")
+        
+        if role and message is not None:
+            messages.append({"role": role, "content": message})
+
+    return messages
+
 class ModelInfo(graphene.ObjectType):
     model_name = graphene.String()
     token_count = None
-
-
 
 
 class SendMessages(graphene.Mutation):
@@ -226,41 +237,46 @@ class SendMessages(graphene.Mutation):
         system_message = graphene.String()
         assistant_message = graphene.String()
         user_message = graphene.String()
-        model_name = graphene.String(default_value="gpt-3.5-turbo-0301")
+        model_name = graphene.String(default_value="gpt-3.5-turbo")
 
     system_message = graphene.Field(lambda: SystemMessage)
     assistant_message = graphene.Field(lambda: AssistantMessage)
     user_message = graphene.Field(lambda: UserMessage)
     modelName = graphene.String()
 
-    #def mutate(self, info, system_message=None, assistant_message=None, user_message=None, model_name=None):
+
     def mutate(self, info, sessionId, system_message=None, assistant_message=None, user_message=None, model_name=None):
-        # Checking if session history exists for the session
-        if sessionId not in session_history:
-            session_history[sessionId] = []
-                    
+        # Ensure session history exists for the session
+        session_history.setdefault(sessionId, [])
+                            
         input_messages = []
-        filters = ['numerical', 'keyword', 'anonymize', 'japanese']
 
         print(f"Received arguments: sessionId={sessionId}, system_message={system_message}, assistant_message={assistant_message}, user_message={user_message}, model_name={model_name}")
 
-        if system_message:
-            system_message = apply_filters(system_message, filters)
-            input_messages.append({"role": "system", "content": system_message})
-        if assistant_message:
-            assistant_message = apply_filters(assistant_message, filters)
-            input_messages.append({"role": "assistant", "content": assistant_message})
-        if user_message:
-            user_message = apply_filters(user_message, filters)
-            input_messages.append({"role": "user", "content": user_message})
-    
-        # Saving the query to session history before processing
-        session_history[sessionId].append(input_messages)
+        # Add messages to session history and input_messages for model
+        for role, message in [('system', system_message), ('assistant', assistant_message), ('user', user_message)]:
+            if message:
+                session_history[sessionId].append({
+                    "role": role,
+                    "message": message,
+                    "timestamp": datetime.datetime.now().isoformat(),
+                })
+                input_messages.append({
+                    "role": role,
+                    "content": message,
+                })
+
+        print(f"input_messages: {input_messages}")
+
+        # # Save the query to session history before processing
+        # session_history[sessionId].append({
+        #     "request": input_messages,
+        #     "timestamp": datetime.datetime.now().isoformat(),
+        # })
         
         response = chat_with_models(model_name, input_messages)
 
         if isinstance(response, list):
-            # Extract system, assistant, and user messages from the response
             system_message = next((msg["content"] for msg in response if msg["role"] == "system"), None)
             assistant_message = next((msg["content"] for msg in response if msg["role"] == "assistant"), None)
             user_message = next((msg["content"] for msg in response if msg["role"] == "user"), None)
@@ -269,6 +285,15 @@ class SendMessages(graphene.Mutation):
             assistant_message = response["content"]
             user_message = None
 
+        # Add responses to session history
+        for role, message in [('system', system_message), ('assistant', assistant_message), ('user', user_message)]:
+            if message:
+                session_history[sessionId].append({
+                    "role": role,
+                    "message": message,
+                    "timestamp": datetime.datetime.now().isoformat(),
+                })
+        
         return SendMessages(system_message=SystemMessage(content=system_message) if system_message else None,
                             assistant_message=AssistantMessage(content=assistant_message) if assistant_message else None,
                             user_message=UserMessage(content=user_message) if user_message else None,
