@@ -76,6 +76,7 @@ def filter_japanese_by_place_keisyou(text):
     masked_text = re.sub(place_pattern, "{japanese_place}", text)
     return masked_text
 
+
 def filter_japanese_by_age_keyshou(text):
     age_pattern = r"(\d{1,2}歳)"
     masked_text = re.sub(age_pattern, "{japanese_age}", text)
@@ -231,6 +232,7 @@ class ModelInfo(graphene.ObjectType):
     token_count = None
 
 
+
 class SendMessages(graphene.Mutation):
     class Arguments:
         sessionId = graphene.String(required=True)
@@ -246,34 +248,32 @@ class SendMessages(graphene.Mutation):
 
 
     def mutate(self, info, sessionId, system_message=None, assistant_message=None, user_message=None, model_name=None):
-        # Ensure session history exists for the session
-        session_history.setdefault(sessionId, [])
-                            
+        global session_history  # Declare it global to access it inside this method
+        if sessionId not in session_history:
+            session_history[sessionId] = []
+
         input_messages = []
 
-        print(f"Received arguments: sessionId={sessionId}, system_message={system_message}, assistant_message={assistant_message}, user_message={user_message}, model_name={model_name}")
+        # Get previous input_messages if they exist
+        for message in session_history[sessionId]:
+            input_messages.append(message)
 
-        # Add messages to session history and input_messages for model
+           # Apply filters to the user_message
+        if user_message:
+            user_message = apply_filters(user_message, filters=['numerical', 'keyword', 'anonymize'], jp_filters=[], model=None, keyword_file=None)
+
+
+        # Add new messages to session history and input_messages for model
         for role, message in [('system', system_message), ('assistant', assistant_message), ('user', user_message)]:
             if message:
-                session_history[sessionId].append({
-                    "role": role,
-                    "message": message,
-                    "timestamp": datetime.datetime.now().isoformat(),
-                })
-                input_messages.append({
+                new_message = {
                     "role": role,
                     "content": message,
-                })
+                }
+                session_history[sessionId].append(new_message)
+                input_messages.append(new_message)
 
-        print(f"input_messages: {input_messages}")
-
-        # # Save the query to session history before processing
-        # session_history[sessionId].append({
-        #     "request": input_messages,
-        #     "timestamp": datetime.datetime.now().isoformat(),
-        # })
-        
+        # Call the model with the combined old and new input_messages
         response = chat_with_models(model_name, input_messages)
 
         if isinstance(response, list):
@@ -290,10 +290,10 @@ class SendMessages(graphene.Mutation):
             if message:
                 session_history[sessionId].append({
                     "role": role,
-                    "message": message,
-                    "timestamp": datetime.datetime.now().isoformat(),
+                    #"message": message,
+                    "content": message,
+                    #"timestamp": datetime.datetime.now().isoformat(),
                 })
-        
         return SendMessages(system_message=SystemMessage(content=system_message) if system_message else None,
                             assistant_message=AssistantMessage(content=assistant_message) if assistant_message else None,
                             user_message=UserMessage(content=user_message) if user_message else None,
