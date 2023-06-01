@@ -80,9 +80,9 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Chat with OpenAI models using GraphQL server")
 
     parser.add_argument("--sessionId", default=str(uuid.uuid4()), type=str, help="sessionId")
-    parser.add_argument("--system", type=str, default="be my English teacher", help="System message to send")
+    parser.add_argument("--system", type=str, default=None, help="System message to send")
     parser.add_argument("--assistant", type=str, default=None, help="Assistant message to send")
-    parser.add_argument("--user", default="Hello" ,type=str, help="User message to send")
+    parser.add_argument("--user", default=None ,type=str, help="User message to send")
     parser.add_argument("--model", default="gpt-3.5-turbo", type=str, help="model")
     return parser.parse_args()
 
