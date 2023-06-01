@@ -192,28 +192,6 @@ def decode_text(json_string, replacements):
     except (json.JSONDecodeError, TypeError):
         return json_string
 
-# def decode_text(json_string, replacements):
-#     # Load the JSON string into a Python dictionary
-#     data = json.loads(json_string)
-
-#     # Invert the replacements dictionary
-#     inverted_replacements = {v: k for k, v in replacements.items()}
-
-#     # If the content is nested within the dictionary, you may need to go deeper:
-#     content = data['content']
-
-#     # Replace placeholders with original values
-#     for placeholder, original in inverted_replacements.items():
-#         content = content.replace(placeholder, original)
-
-#     # Replace the original content with the decoded content
-#     data['content'] = content
-
-#     # Convert the Python dictionary back into a JSON string
-#     json_string = json.dumps(data)
-
-#     return json_string
-
 
 def filter_confidential_by_ai(text, model):
     # This is a placeholder for AI-based text filtering
@@ -350,7 +328,6 @@ class ModelInfo(graphene.ObjectType):
     token_count = None
 
 
-
 class SendMessages(graphene.Mutation):
     class Arguments:
         sessionId = graphene.String(required=True)
@@ -401,16 +378,6 @@ class SendMessages(graphene.Mutation):
                 # Decode the assistant's message and update the content in the response
                 message['content'] = decode_text(message['content'], replacements)
         
-        # # Parse the JSON response and decode the content
-        # response = json.loads(response.text)
-        # decoded_content = decode_text(response['content'], replacements)
-
-        # # Replace the original content with the decoded content
-        # response['content'] = decoded_content
-
-        # # Convert the Python dictionary back into a JSON string
-        # response = json.dumps(response)
-
         if isinstance(response, list):
             system_message = next((msg["content"] for msg in response if msg["role"] == "system"), None)
             assistant_message = next((msg["content"] for msg in response if msg["role"] == "assistant"), None)
