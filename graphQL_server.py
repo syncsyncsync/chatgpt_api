@@ -16,14 +16,6 @@ nlp = spacy.load("en_core_web_sm")
 # Initializing session history
 session_history = {}
 
-
-# def load_spacy_model():
-#     global nlp
-#     nlp = spacy.load("en_core_web_sm")
-
-# load_spacy_model()
-
-
 def find_names_and_places(text):
     doc = nlp(text)
     names = [ent.text for ent in doc.ents if ent.label_ == "PERSON"]
