@@ -3,7 +3,6 @@ import random
 from flask import Flask
 from flask_graphql import GraphQLView
 import graphene
-#import sqlite3
 import re
 import spacy
 from chatgpt import chat_with_models
@@ -15,6 +14,7 @@ nlp = spacy.load("en_core_web_sm")
 
 # Initializing session history
 session_history = {}
+
 
 def find_names_and_places(text):
     doc = nlp(text)
@@ -59,6 +59,7 @@ def filter_keyword_information(text, keyword_file='keywords.txt'):
 
     return text, replacements
 
+
 def filter_numerical_information(text):
     replacements = defaultdict(list)
 
@@ -82,6 +83,7 @@ def filter_numerical_information(text):
 
     return text, replacements
 
+
 def filter_anonymize_text(text):
     replacements = {}
     names, places = find_names_and_places(text)
@@ -97,7 +99,6 @@ def filter_anonymize_text(text):
         replacements[place] = place_placeholder
 
     return text, replacements
-
 
 
 def filter_japanese_names(text):
@@ -169,6 +170,7 @@ def apply_japanese_filters(text, filters=[
     return text, replacements
 
 import json
+
 
 def decode_text(json_string, replacements):
     try:
@@ -268,7 +270,6 @@ class Query(graphene.ObjectType):
         #token_count = count_tokens(model_name)
         return ModelInfo(model_name=model_name, token_count=None)
 
-
     def resolve_system_messages(self, info):
         filtered_messages = []
         for msg in system_messages:
@@ -315,6 +316,7 @@ def extract_messages_from_session_history(sessionId):
 
     return messages
 
+
 class ModelInfo(graphene.ObjectType):
     model_name = graphene.String()
     token_count = None
@@ -345,7 +347,7 @@ class SendMessages(graphene.Mutation):
         for message in session_history[sessionId]:
             input_messages.append(message)
 
-           # Apply filters to the user_message
+        # Apply filters to the user_message
         if user_message:
             user_message, replacements = apply_filters(user_message, filters=['numerical', 'keyword', 'anonymize'], jp_filters=[], model=None, keyword_file=None)
 
@@ -379,15 +381,19 @@ class SendMessages(graphene.Mutation):
             assistant_message = response["content"]
             user_message = None
 
-        # Add responses to session history
-        for role, message in [('system', system_message), ('assistant', assistant_message), ('user', user_message)]:
-            if message:
-                session_history[sessionId].append({
-                    "role": role,
-                    #"message": message,
-                    "content": message,
-                    #"timestamp": datetime.datetime.now().isoformat(),
-                })
+        # Check for error message from the assistant before adding to session history
+        error_message = "Error: Unable to get response from the model."
+        if assistant_message != error_message:
+            # Add responses to session history
+            for role, message in [('system', system_message), ('assistant', assistant_message), ('user', user_message)]:
+                if message:
+                    session_history[sessionId].append({
+                        "role": role,
+                        "content": message,
+                    })
+        else:
+            print(f"Error occurred: {error_message}")
+
         return SendMessages(system_message=SystemMessage(content=system_message) if system_message else None,
                             assistant_message=AssistantMessage(content=assistant_message) if assistant_message else None,
                             user_message=UserMessage(content=user_message) if user_message else None,

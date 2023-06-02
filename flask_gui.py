@@ -1,42 +1,40 @@
-from flask import Flask, request, render_template
-from chatgpt import chat_with_models
-from graphQL_client import send_messages
 
-app = Flask(__name__, template_folder='templates', static_folder='static')
+from flask import Flask, render_template, request, redirect, url_for
+import markdown
+import uuid
+from graphQL_client import send_messages, get_session_history, send_graphql_request
+from flask import Flask, render_template, request
+from flask_bootstrap import Bootstrap
+import json
+app = Flask(__name__)
+Bootstrap(app)
 
-chat_models = [
-    "gpt-4", "gpt-4-0314", "gpt-4-32k", "gpt-4-32k-0314",
-    "gpt-3.5-turbo", "gpt-3.5-turbo-0301"
-]
-
-# @app.route('/', methods=['GET', 'POST'])
-# def chat():
-#     if request.method == 'POST':
-#         messages = []
-#         messages.append({"role": "user", "content": request.form['user_input']})
-#         selected_model = request.form['model']
-#         response = chat_with_models(selected_model, messages)
-#         return render_template('index.html', response=response, models=chat_models)
-#     return render_template('index.html', models=chat_models)
-
+@app.route('/')
+def home():
+    new_uuid = str(uuid.uuid4())
+    return render_template('index.html', session_id=new_uuid)
 
 @app.route('/', methods=['GET', 'POST'])
-def chat():
+def index():
     if request.method == 'POST':
-        messages = []
-        user_message = request.form['user_input']
-        messages.append({"role": "user", "content": user_message})
-        selected_model = request.form['model']
-        
-        # Call the send_messages function from graphQL_client.py
-        send_messages_response = send_messages(user_message=user_message)
-        
-        # Adjust the format of the response to match the GraphQL client response
-        response = {"choices": [{"message": {"role": "assistant", "content": send_messages_response["assistantMessage"]["content"]}}]}
-        
-        return render_template('index.html', response=response, models=chat_models)
-    return render_template('index.html', models=chat_models)
+        session_id = request.form.get('sessionId')
+        system_message = request.form.get('system')
+        assistant_message = request.form.get('assistant')
+        user_message = request.form.get('user')
+        model_name = request.form.get('model')
 
-if __name__ == '__main__':
+        send_messages_response = send_messages(session_id, system_message, assistant_message, user_message, model_name)
+
+        session_history_response = get_session_history(session_id)
+
+        # Convert the JSON string to a Python object
+        session_history_response = json.loads(session_history_response )
+        
+        #print(session_history_response)
+        return render_template('index.html', send_messages_response=send_messages_response, session_history_response=session_history_response)
+
+    return render_template('index.html')
+
+if __name__ == "__main__":
     app.run(debug=True, port=8080)
 

@@ -1,40 +1,80 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ChatGPT</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Chat</title>
+    <p style="font-size: 20px;"><strong>Model Name:</strong> {{ send_messages_response['modelName'] }}</p>
 </head>
 <body>
-    <h1>ChatGPT</h1>
-    <div class="system-message">
-        Hi there! How can I assist you today?
-    </div>
-    <div class="main-container">
-        <div class="chat-container">
-			
-            {% if user_message %}
-                <div class="message user-message">{{ user_message }}</div>
-            {% endif %}
-            {% if assistant_message %}
-                <div class="message assistant-message">{{ assistant_message }}</div>
-            {% endif %}
-        </div>
-        <form method="post" action="/" class="input-form">
-            <label for="system_input">System message:</label>
-            <input type="text" name="system_input" id="system_input" value="{{ system_message if system_message }}" placeholder="Type initial system message">
-            <label for="model">Model:</label>
-            <select name="model" id="model">
-                {% for model in models %}
-                <option value="{{ model }}" {% if selected_model == model %}selected{% endif %}>{{ model }}</option>
-                {% endfor %}
-            </select>
-            <label for="user_input">Your message:</label>
-            <input type="text" name="user_input" id="user_input" required>
-            <button type="submit" class="btn btn-primary btn-lg">Send</button>
-        </form>
-    </div>
+    <h1>Chat</h1>
+
+    <!-- <form method="POST">
+        <label for="user_message">Your message:</label>
+        <input type="text" id="user_message" name="user_message">
+        <button type="submit">Send</button>
+    </form> -->
+
+{% extends "bootstrap/base.html" %}
+
+{% block title %}OpenAI Chat{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <form method="POST">
+      <div class="form-group">
+        <label for="sessionId">Session ID</label>
+        <input type="text" class="form-control" id="sessionId" name="sessionId" value="{{ session_id }}" placeholder="Enter Session ID">
+      </div>
+      <div class="form-group">
+        <label for="system">System Message</label>
+        <input type="text" class="form-control" id="system" name="system" placeholder="Enter System Message">
+      </div>
+      <div class="form-group">
+        <label for="assistant">Assistant Message</label>
+        <input type="text" class="form-control" id="assistant" name="assistant" placeholder="Enter Assistant Message">
+      </div>
+      <div class="form-group">
+        <label for="user">User Message</label>
+        <input type="text" class="form-control" id="user" name="user" placeholder="Enter User Message">
+      </div>
+      <div class="form-group">
+        <label for="model">Model</label>
+        <select class="form-control" id="model" name="model">
+          <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+          <option value="gpt-4">gpt-4</option>
+        </select>
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+
+    {% if send_messages_response %}
+      <h2>Messages Response</h2>
+      <div>
+        <p><strong>Model Name:</strong> {{ send_messages_response['modelName'] }}</p>
+        {% if send_messages_response['systemMessage'] %}
+            <p><strong>System Message:</strong> {{ send_messages_response['systemMessage']['content'] }}</p>
+        {% endif %}
+        {% if send_messages_response['assistantMessage'] %}
+            <p><strong>Assistant Message:</strong> {{ send_messages_response['assistantMessage']['content'] }}</p>
+        {% endif %}
+        {% if send_messages_response['userMessage'] %}
+            <p><strong>User Message:</strong> {{ send_messages_response['userMessage']['content'] }}</p>
+        {% endif %}
+      </div>
+    {% endif %}
+ 
+{% if session_history_response %}
+  <h2>Session History</h2>
+  {% for message in session_history_response %}
+    {% if message['role'] == 'user' %}
+      <p><strong>User Message:</strong> {{ message['content'] }}</p>
+    {% elif message['role'] == 'assistant' %}
+      <p><strong>Assistant Message:</strong> {{ message['content'] }}</p>
+    {% endif %}
+    {% endfor %}
+{% else %}
+  <p>No session history available</p>
+{% endif %}
+
+</div>
+{% endblock %}
 </body>
 </html>

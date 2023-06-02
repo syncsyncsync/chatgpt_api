@@ -3,8 +3,10 @@ import argparse
 import requests
 import json
 import uuid
+import ast
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
+
 
 def send_graphql_request(query, variables=None):
     url = "http://localhost:5000/graphql"
@@ -13,7 +15,18 @@ def send_graphql_request(query, variables=None):
     }
     data = json.dumps({"query": query, "variables": variables})
     print(variables)
-    response = requests.post(url, headers=headers, data=data)
+    
+    try:
+        response = requests.post(url, headers=headers, data=data)
+        response.raise_for_status()  # Raise an exception if the response status is not 200
+
+        return json.loads(response.text)
+
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Failed to connect to the GraphQL server: {e}")
+    except (json.JSONDecodeError, TypeError) as e:
+        raise Exception(f"Failed to parse GraphQL response: {e}")
+    #response = requests.post(url, headers=headers, data=data)
 
     if response.status_code == 200:
         return json.loads(response.text)
@@ -56,6 +69,7 @@ def send_messages(sessionId, system_message=None, assistant_message=None, user_m
     else:
         return response['data']['sendMessages']
 
+
 def get_session_history(sessionId):
     # Add get_session_history query
     get_session_history_query = """
@@ -69,16 +83,24 @@ def get_session_history(sessionId):
     }
 
     response = send_graphql_request(get_session_history_query, variables)
+
     if 'errors' in response:
         print("Error getting session history:")
         print(response['errors'])
-    else:
-        return response['data']['sessionHistory']
+        return None
+
+    # Decode the content of assistant's messages
+    session_history = response['data']['sessionHistory']
+
+    for i, message in enumerate(session_history):
+        message_dict = ast.literal_eval(message)
+        session_history[i] = message_dict
+
+    return json.dumps(session_history)
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Chat with OpenAI models using GraphQL server")
-
     parser.add_argument("--sessionId", default=str(uuid.uuid4()), type=str, help="sessionId")
     parser.add_argument("--system", type=str, default=None, help="System message to send")
     parser.add_argument("--assistant", type=str, default=None, help="Assistant message to send")
@@ -87,11 +109,11 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def main():
+def main(sessionId, system_message, assistant_message, user_message, model_name):
     history = {}
-    args = parse_arguments()
-    
-    send_messages_response = send_messages(sessionId=args.sessionId, system_message=args.system, assistant_message=args.assistant, user_message=args.user, model_name=args.model)
+    sessionId = str(sessionId)
+        
+    send_messages_response = send_messages(sessionId, system_message, assistant_message, user_message, model_name)
    
     if send_messages_response:
         print("OpenAI's response:")
@@ -107,10 +129,16 @@ def main():
     print("Sent messages:")
     print(send_messages_response)
 
-    session_history_response = get_session_history(sessionId=args.sessionId)
+    session_history_response = get_session_history(sessionId=sessionId)
     if session_history_response:
+        print("---------------------------------")
         print("Session History:")
+        #print(len(session_history_response))
+        print("---------------------------------")
         print(session_history_response)
 
 if __name__ == "__main__":
-    main()
+    args = parse_arguments()
+    main(sessionId=args.sessionId, system_message=args.system, assistant_message=args.assistant, user_message=args.user, model_name=args.model)
+    
+    #main(1, system_message=args.system, assistant_message=args.assistant, user_message="my tel2 is 09012343454", model_name=args.model)
