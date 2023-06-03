@@ -1,1 +1,3 @@
 Pipfile
+__pycache__ 
+.git
