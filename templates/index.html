@@ -1,79 +1,158 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Chat</title>
-    <p style="font-size: 20px;"><strong>Model Name:</strong> {{ send_messages_response['modelName'] }}</p>
+  <head>
+    <title>Chat GUI </title>
+    <style>
+        .half-width {
+            width: 50%;
+        }
+        
+        .scrollable-history {
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: #f0f0f0;  /* Add the color you want here. */
+        }
+        #user {
+            height: 100px;
+        }
+        .speech-bubble {
+            position: relative;
+            background: #00aabb;
+            border-radius: .4em;
+            color: white;
+            padding: 10px;
+            margin-bottom: 20px;
+            max-width: 80%;
+        }
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border: 20px solid transparent;
+            border-right-color: #00aabb;
+            border-left: 0;
+            border-bottom: 0;
+            margin-top: -10px;
+            margin-left: -20px;
+        }
+                
+        .user {
+            display: inline-block;
+            background: #f4f4f4;
+            color: black;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+
+        .user:after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border: 15px solid transparent;
+            border-left-color: #f4f4f4;
+            border-right: 0;
+            margin-top: -15px;
+            margin-right: -15px;
+        }
+
+        .chat-row {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .chat-row.assistant {
+            justify-content: flex-start;
+        }
+        
+    </style>
+    <script>
+      function toggleOptions() {
+          var systemInput = document.getElementById("system-input");
+          var assistantInput = document.getElementById("assistant-input");
+          systemInput.style.display = systemInput.style.display === 'none' ? 'block' : 'none';
+          assistantInput.style.display = assistantInput.style.display === 'none' ? 'block' : 'none';
+      }
+      </script>
 </head>
+  
 <body>
-    <h1>Chat</h1>
-
-    <!-- <form method="POST">
-        <label for="user_message">Your message:</label>
-        <input type="text" id="user_message" name="user_message">
-        <button type="submit">Send</button>
-    </form> -->
-
-{% extends "bootstrap/base.html" %}
+  {% extends "bootstrap/base.html" %}
 
 {% block title %}OpenAI Chat{% endblock %}
 
 {% block content %}
   <div class="container">
-    <form method="POST">
-      <div class="form-group">
+    <h2>Chat Demo Develop </h2>  
+        
+    
+    {% if session_history_response %}
+   
+    <div class="scrollable-history">
+      {% for message in session_history_response %}
+        {% if message['role'] == 'user' %}
+        <div class="chat-row">
+          <div class="speech-bubble user">
+            <p><strong>User Message:</strong> {{ message['content'] }}</p>
+          </div>
+        </div>
+        {% elif message['role'] == 'assistant' %}
+        <div class="chat-row assistant">
+          <div class="speech-bubble">
+            <p><strong>Assistant Message:</strong> {{ message['content'] }}</p>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div id="session-history" class="form-group">
+      <label for="session-history">Session History</label>
+      <textarea class="form-control" id="session-history" name="session-history" readonly placeholder="Conversation will be displayed here..."></textarea>
+  </div>
+
+  {% endif %}
+
+  
+  <form method="POST">
+    <div class="form-group" style="display: flex; justify-content: space-between;">
+      <div class="half-width">
         <label for="sessionId">Session ID</label>
         <input type="text" class="form-control" id="sessionId" name="sessionId" value="{{ session_id }}" placeholder="Enter Session ID">
       </div>
-      <div class="form-group">
-        <label for="system">System Message</label>
-        <input type="text" class="form-control" id="system" name="system" placeholder="Enter System Message">
-      </div>
-      <div class="form-group">
-        <label for="assistant">Assistant Message</label>
-        <input type="text" class="form-control" id="assistant" name="assistant" placeholder="Enter Assistant Message">
-      </div>
-      <div class="form-group">
-        <label for="user">User Message</label>
-        <input type="text" class="form-control" id="user" name="user" placeholder="Enter User Message">
-      </div>
-      <div class="form-group">
+      <div class="half-width">
         <label for="model">Model</label>
         <select class="form-control" id="model" name="model">
           <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
           <option value="gpt-4">gpt-4</option>
         </select>
-      <button type="submit" class="btn btn-primary">Submit</button>
-    </form>
-
-    {% if send_messages_response %}
-      <h2>Messages Response</h2>
-      <div>
-        <p><strong>Model Name:</strong> {{ send_messages_response['modelName'] }}</p>
-        {% if send_messages_response['systemMessage'] %}
-            <p><strong>System Message:</strong> {{ send_messages_response['systemMessage']['content'] }}</p>
-        {% endif %}
-        {% if send_messages_response['assistantMessage'] %}
-            <p><strong>Assistant Message:</strong> {{ send_messages_response['assistantMessage']['content'] }}</p>
-        {% endif %}
-        {% if send_messages_response['userMessage'] %}
-            <p><strong>User Message:</strong> {{ send_messages_response['userMessage']['content'] }}</p>
-        {% endif %}
       </div>
-    {% endif %}
- 
-{% if session_history_response %}
-  <h2>Session History</h2>
-  {% for message in session_history_response %}
-    {% if message['role'] == 'user' %}
-      <p><strong>User Message:</strong> {{ message['content'] }}</p>
-    {% elif message['role'] == 'assistant' %}
-      <p><strong>Assistant Message:</strong> {{ message['content'] }}</p>
-    {% endif %}
-    {% endfor %}
-{% else %}
-  <p>No session history available</p>
-{% endif %}
-
+    </div>
+    <div class="form-group" id="system-input" style="display: none;">
+      <label for="system">System Message</label>
+      <input type="text" class="form-control" id="system" name="system" placeholder="Enter System Message">
+    </div>
+    <div class="form-group" id="assistant-input" style="display: none;">
+      <label for="assistant">Assistant Message</label>
+      <input type="text" class="form-control" id="assistant" name="assistant" placeholder="Enter Assistant Message">
+    </div>
+    <div class="form-group">
+      <label for="user">User Message</label>
+      <textarea class="form-control" id="user" name="user" placeholder="Enter User Message"></textarea>
+    </div>
+  
+    <div class="form-group" style="text-align: right;">
+      <button type="button" class="btn btn-secondary" onclick="toggleOptions()">Options</button>
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+    </form>  
+        
 </div>
 {% endblock %}
 </body>
