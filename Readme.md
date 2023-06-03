@@ -24,11 +24,11 @@ pip install -r requirements.txt
 ```
 
 5. Download the necessary spaCy language model
-
+```bash
+python -m spacy download en_core_web_sm
+```
 
 That's it. Now you can follow the usage instructions in the README to start the server and interact with the ChatGPT API.
-
-
 
 ## Usage
 
@@ -38,11 +38,20 @@ That's it. Now you can follow the usage instructions in the README to start the 
 export OPENAI_API_KEY="your-api-key-here"
 ```
 
-2. Start the GraphQL server by running,
+2. Start the GraphQL server by running, default port is 5000.
 ```bash
 python graphQL_server.py
 ```
-3. Run the graphQL_client.py script with the following arguments:
+
+3.1 [Web GUI] Run the Web client script flask_gui.py 
+```bash
+python flask_gui.py
+```
+ you can access the local Web GUI at http://localhost:8080.
+
+
+
+3.2 [CLI] Run the client script with the following arguments:
 
 * --system: The system message to start the conversation (optional).
 * --assistant: The assistant message (optional).
@@ -70,12 +79,10 @@ As of now, the following ChatGPT models can be used with this server:
 
 You can modify the model_name variable in the graphQL_server.py script to use a different model.
 
-
 ### Handling Japanese Text
 The client can handle Japanese text by converting it to Unicode escape characters before sending it to the API. To use this feature, apply the unicode_escape function to the user message, and the unicode_unescape function to the API response.
 
 ## Customization
-
 Feel free to modify the graphQL_client.py script to add your own filters or implement additional functionality as needed.
 
 ## Known Issues
