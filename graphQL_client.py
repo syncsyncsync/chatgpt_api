@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 import requests
 import json
@@ -14,25 +15,58 @@ def send_graphql_request(query, variables=None):
         "Content-Type": "application/json",
     }
     data = json.dumps({"query": query, "variables": variables})
-    print(variables)
-    
+    print("********* query from the clent to the local server ********** ")        
+    print(variables)        
     try:
         response = requests.post(url, headers=headers, data=data)
         response.raise_for_status()  # Raise an exception if the response status is not 200
-
+        print("********* response from the local server ********** ")
+        print(response.text)
         return json.loads(response.text)
+
+    except requests.exceptions.ConnectionError:
+        print("********** Server not found **************")
+        sys.exit(1)
 
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Failed to connect to the GraphQL server: {e}")
-    except (json.JSONDecodeError, TypeError) as e:
-        raise Exception(f"Failed to parse GraphQL response: {e}")
-    #response = requests.post(url, headers=headers, data=data)
+        print(f"Failed to connect to the GraphQL server: {e}")
 
-    if response.status_code == 200:
-        return json.loads(response.text)
-    else:
+
+        sys.exit(1)
+
+    except (json.JSONDecodeError, TypeError) as e:
+        print(f"Failed to parse GraphQL response: {e}")
+        sys.exit(1)
+
+    if response.status_code != 200:
         print(response.text)
-        raise Exception(f"GraphQL request failed with status code {response.status_code}")
+        print(f"GraphQL request failed with status code {response.status_code}")
+        sys.exit(1)
+# def send_graphql_request(query, variables=None):
+#     url = "http://localhost:5000/graphql"
+#     headers = {
+#         "Content-Type": "application/json",
+#     }
+#     data = json.dumps({"query": query, "variables": variables})
+#     print(variables)
+    
+#     try:
+#         response = requests.post(url, headers=headers, data=data)
+#         response.raise_for_status()  # Raise an exception if the response status is not 200
+
+#         return json.loads(response.text)
+
+#     except requests.exceptions.RequestException as e:
+#         raise Exception(f"Failed to connect to the GraphQL server: {e}")
+#     except (json.JSONDecodeError, TypeError) as e:
+#         raise Exception(f"Failed to parse GraphQL response: {e}")
+#     #response = requests.post(url, headers=headers, data=data)
+
+#     if response.status_code == 200:
+#         return json.loads(response.text)
+#     else:
+#         print(response.text)
+#         raise Exception(f"GraphQL request failed with status code {response.status_code}")
 
 
 def send_messages(sessionId, system_message=None, assistant_message=None, user_message=None, model_name="gpt-3.5-turbo"):
@@ -139,6 +173,6 @@ def main(sessionId, system_message, assistant_message, user_message, model_name)
 
 if __name__ == "__main__":
     args = parse_arguments()
-    main(sessionId=args.sessionId, system_message=args.system, assistant_message=args.assistant, user_message=args.user, model_name=args.model)
+    #main(sessionId=args.sessionId, system_message=args.system, assistant_message=args.assistant, user_message=args.user, model_name=args.model)
     
-    #main(1, system_message=args.system, assistant_message=args.assistant, user_message="my tel2 is 09012343454", model_name=args.model)
+    main(1, system_message=args.system, assistant_message=args.assistant, user_message="my tel2 is 09012343454", model_name=args.model)
