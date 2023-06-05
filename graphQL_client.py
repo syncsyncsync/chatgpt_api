@@ -42,32 +42,6 @@ def send_graphql_request(query, variables=None):
         print(response.text)
         print(f"GraphQL request failed with status code {response.status_code}")
         sys.exit(1)
-# def send_graphql_request(query, variables=None):
-#     url = "http://localhost:5000/graphql"
-#     headers = {
-#         "Content-Type": "application/json",
-#     }
-#     data = json.dumps({"query": query, "variables": variables})
-#     print(variables)
-    
-#     try:
-#         response = requests.post(url, headers=headers, data=data)
-#         response.raise_for_status()  # Raise an exception if the response status is not 200
-
-#         return json.loads(response.text)
-
-#     except requests.exceptions.RequestException as e:
-#         raise Exception(f"Failed to connect to the GraphQL server: {e}")
-#     except (json.JSONDecodeError, TypeError) as e:
-#         raise Exception(f"Failed to parse GraphQL response: {e}")
-#     #response = requests.post(url, headers=headers, data=data)
-
-#     if response.status_code == 200:
-#         return json.loads(response.text)
-#     else:
-#         print(response.text)
-#         raise Exception(f"GraphQL request failed with status code {response.status_code}")
-
 
 def send_messages(sessionId, system_message=None, assistant_message=None, user_message=None, model_name="gpt-3.5-turbo"):
     # Add sessionId to the sendMessages mutation
