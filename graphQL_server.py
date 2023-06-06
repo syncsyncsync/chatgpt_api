@@ -208,7 +208,8 @@ def apply_filters(text, filters=['numerical', 'keyword', 'anonymize'], jp_filter
     replacements = {}
     
     if filters == []:
-        filters = ['numerical', 'keyword', 'anonymize', 'japanese']
+        #filters = ['numerical', 'keyword', 'anonymize', 'japanese']
+        filters = ['numerical', 'keyword']
 
     if 'numerical' in filters:
         text, numerical_replacements = filter_numerical_information(text)
@@ -349,8 +350,8 @@ class SendMessages(graphene.Mutation):
 
         # Apply filters to the user_message
         if user_message:
-            user_message, replacements = apply_filters(user_message, filters=['numerical', 'keyword', 'anonymize'], jp_filters=[], model=None, keyword_file=None)
-
+        #    user_message, replacements = apply_filters(user_message, filters=['numerical', 'keyword', 'anonymize'], jp_filters=[], model=None, keyword_file=None)
+            user_message, replacements = apply_filters(user_message, filters=[], jp_filters=[], model=None, keyword_file=None)
 
         # Add new messages to session history and input_messages for model
         for role, message in [('system', system_message), ('assistant', assistant_message), ('user', user_message)]:

@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, request, redirect, url_for
 import markdown
 import uuid
@@ -16,9 +15,9 @@ def home():
     send_messages_response = {}
     return render_template('index.html', session_id=new_uuid, send_messages_response=send_messages_response)
 
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    model_name = ""
     if request.method == 'POST':
         session_id = request.form.get('sessionId')
         system_message = request.form.get('system')
@@ -27,19 +26,42 @@ def index():
         model_name = request.form.get('model')
 
         send_messages_response = send_messages(session_id, system_message, assistant_message, user_message, model_name)
-
         session_history_response = get_session_history(session_id)
 
         # Convert the JSON string to a Python object
         session_history_response = json.loads(session_history_response)
         
         # pass session_id back to the template here
-        return render_template('index.html', session_id=session_id, send_messages_response=send_messages_response, session_history_response=session_history_response)
+        return render_template('index.html', session_id=session_id, send_messages_response=send_messages_response, session_history_response=session_history_response, model_name=model_name)
 
     new_uuid = str(uuid.uuid4())
     send_messages_response = {}
-    #return render_template('index.html', send_messages_response=send_messages_response)
-    return render_template('index.html', session_id=new_uuid, send_messages_response=send_messages_response, session_history_response=session_history_response)
+    return render_template('index.html', session_id=new_uuid, send_messages_response=send_messages_response, session_history_response=session_history_response, model_name=model_name)
+
+
+# @app.route('/', methods=['GET', 'POST'])
+# def index():
+#     if request.method == 'POST':
+#         session_id = request.form.get('sessionId')
+#         system_message = request.form.get('system')
+#         assistant_message = request.form.get('assistant')
+#         user_message = request.form.get('user')
+#         model_name = request.form.get('model')
+
+#         send_messages_response = send_messages(session_id, system_message, assistant_message, user_message, model_name)
+
+#         session_history_response = get_session_history(session_id)
+
+#         # Convert the JSON string to a Python object
+#         session_history_response = json.loads(session_history_response)
+        
+#         # pass session_id back to the template here
+#         return render_template('index.html', session_id=session_id, send_messages_response=send_messages_response, session_history_response=session_history_response)
+
+#     new_uuid = str(uuid.uuid4())
+#     send_messages_response = {}
+#     #return render_template('index.html', send_messages_response=send_messages_response)
+#     return render_template('index.html', session_id=new_uuid, send_messages_response=send_messages_response, session_history_response=session_history_response)
 
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
