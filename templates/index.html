@@ -15,6 +15,7 @@
       #user {
           height: 100px;
       }
+      /*
       .assistant-message pre {
           margin: 1em 0;  /* コード部分の前後にマージンを追加します */
           background-color: black;  /* コード部分の背景色を黒に変更 */
@@ -25,6 +26,7 @@
       .assistant-message pre code {
           display: block;  /* コード部分をブロック要素として表示し、前後に改行を追加します */
       }
+      */
       .assistant-message p {
           margin: 0;
       }
@@ -80,7 +82,8 @@
           justify-content: flex-start;
       }
   </style>
-    <script>
+
+<script>
       function toggleOptions() {
           var systemInput = document.getElementById("system-input");
           var assistantInput = document.getElementById("assistant-input");
@@ -91,28 +94,23 @@
     var element = document.getElementById(elementId);
     element.scrollTop = element.scrollHeight;
   }
-      </script>
-      <script>
+</script>
+<script>
         function sanitizeHTML(str) {
           var temp = document.createElement('div');
           temp.textContent = str;
           return temp.innerHTML;
         }
-      </script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
-      <script>
-        window.onload = function() {
-          var converter = new showdown.Converter();
-          var assistantMessages = document.getElementsByClassName("assistant-message");
-          
-          for (var i = 0; i < assistantMessages.length; i++) {
-            var html = converter.makeHtml(assistantMessages[i].innerText);
-            assistantMessages[i].innerHTML = html;
-          }
-        }
-      </script>
-      
-      
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+  var assistantMessages = document.getElementsByClassName("assistant-message");
+  for (var i = 0; i < assistantMessages.length; i++) {
+    var html = marked(assistantMessages[i].innerText);
+    assistantMessages[i].innerHTML = html;
+  }});
+</script>
 </head>
   
 <body>
@@ -135,7 +133,7 @@
       {% elif message['role'] == 'assistant' %}
         <div class="chat-row assistant">
           <div class="speech-bubble">
-            <div class="assistant-message"><strong>{{ model_name }} :</strong> {{ message['content'] }}</div>
+            <div class="assistant-message"><strong>{{ model_name }} :</strong> {{ message['content']|markdown|safe}}</div>
           </div>
         </div>
       {% endif %}  <!-- Add this line -->

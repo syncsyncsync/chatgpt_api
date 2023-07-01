@@ -21,7 +21,9 @@ def send_graphql_request(query, variables=None):
         response = requests.post(url, headers=headers, data=data)
         response.raise_for_status()  # Raise an exception if the response status is not 200
         print("********* response from the local server ********** ")
-        print(response.text)
+        data = json.loads(response.text)
+        pretty_text = json.dumps(data, ensure_ascii=False, indent=4)
+        print(pretty_text)
         return json.loads(response.text)
 
     except requests.exceptions.ConnectionError:
@@ -135,7 +137,7 @@ def main(sessionId, system_message, assistant_message, user_message, model_name)
             print(f"Res: Model Name: {send_messages_response['modelName']}")
 
     print("Sent messages:")
-    print(send_messages_response)
+    print(eval(send_messages_response))
 
     session_history_response = get_session_history(sessionId=sessionId)
     if session_history_response:
@@ -147,6 +149,6 @@ def main(sessionId, system_message, assistant_message, user_message, model_name)
 
 if __name__ == "__main__":
     args = parse_arguments()
-    #main(sessionId=args.sessionId, system_message=args.system, assistant_message=args.assistant, user_message=args.user, model_name=args.model)
+    main(sessionId=args.sessionId, system_message=args.system, assistant_message=args.assistant, user_message=args.user, model_name=args.model)
     
-    main(1, system_message=args.system, assistant_message=args.assistant, user_message="my tel2 is 09012343454", model_name=args.model)
+    #main(1, system_message=args.system, assistant_message=args.assistant, user_message="my tel2 is 09012343454", model_name=args.model)
